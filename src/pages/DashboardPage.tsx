@@ -13,7 +13,7 @@ function AgencyDashboard() {
 
   const { data: dashboard } = useQuery({
     queryKey: ['agency-dashboard'],
-    queryFn: () => api.get('/agency/dashboard').then((res) => res.data).catch(() => null),
+    queryFn: () => api.get('/agency/v2/dashboard').then((res) => res.data).catch(() => null),
   });
 
   const totalSeries = dashboard?.totalSeries ?? series?.length ?? 0;
@@ -107,4 +107,5 @@ function KpiCard({ color, label, value, sub }: { color: 'blue' | 'yellow' | 'gre
     </div>
   );
 }
+
 
