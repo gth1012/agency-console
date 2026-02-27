@@ -13,9 +13,10 @@ interface Asset {
 export default function ActivationPage() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const { show: addToast } = useToastStore();
+  const { show: showToast } = useToastStore();
   const [selectedSeries, setSelectedSeries] = useState<string>(searchParams.get('series') || '');
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [quickCount, setQuickCount] = useState<string>('');
 
   const { data: seriesList } = useQuery({
     queryKey: ['agency-series'],
@@ -30,6 +31,7 @@ export default function ActivationPage() {
 
   useEffect(() => {
     setSelectedAssets([]);
+    setQuickCount('');
   }, [selectedSeries]);
 
   const unregisteredAssets = assets?.filter((a: Asset) => a.status === 'UNREGISTERED') || [];
@@ -37,15 +39,17 @@ export default function ActivationPage() {
 
   const activateMutation = useMutation({
     mutationFn: (assetIds: string[]) => api.post('/agency/activate', { asset_ids: assetIds }),
-    onSuccess: () => {
-      addToast('정품등록이 완료되었습니다.', 'success');
+    onSuccess: (res: any) => {
+      const count = res.data?.activated || 0;
+      showToast(count + '개 정품등록이 완료되었습니다.', 'success');
       setSelectedAssets([]);
+      setQuickCount('');
       queryClient.invalidateQueries({ queryKey: ['agency-series-assets', selectedSeries] });
       queryClient.invalidateQueries({ queryKey: ['agency-series'] });
       queryClient.invalidateQueries({ queryKey: ['agency-dashboard'] });
     },
     onError: () => {
-      addToast('정품등록에 실패했습니다.', 'error');
+      showToast('정품등록에 실패했습니다.', 'error');
     },
   });
 
@@ -65,6 +69,25 @@ export default function ActivationPage() {
     if (selectedAssets.length === 0) return;
     if (!window.confirm(selectedAssets.length + '개 자산을 정품등록 하시겠습니까?')) return;
     activateMutation.mutate(selectedAssets);
+  };
+
+  const handleQuickActivate = () => {
+    const count = parseInt(quickCount, 10);
+    if (!count || count <= 0) {
+      showToast('등록할 수량을 입력하세요.', 'error');
+      return;
+    }
+    const target = unregisteredAssets.slice(0, count);
+    if (target.length === 0) {
+      showToast('등록 가능한 미등록 자산이 없습니다.', 'error');
+      return;
+    }
+    const actual = target.length;
+    const msg = count > actual
+      ? '미등록 자산이 ' + actual + '개뿐입니다. ' + actual + '개 모두 등록하시겠습니까?'
+      : actual + '개 자산을 정품등록 하시겠습니까? (#00001부터 순서대로)';
+    if (!window.confirm(msg)) return;
+    activateMutation.mutate(target.map((a: Asset) => a.asset_id));
   };
 
   return (
@@ -98,6 +121,34 @@ export default function ActivationPage() {
           ))}
         </select>
       </div>
+
+      {selectedSeries && unregisteredAssets.length > 0 && (
+        <div className="bg-geo-card border border-geo-border rounded-xl p-5 mb-5">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-sm font-semibold text-txt-primary">빠른 등록</span>
+            <span className="text-[11px] text-txt-muted">에디션 순서대로 자동 등록됩니다</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min="1"
+              max={unregisteredAssets.length}
+              value={quickCount}
+              onChange={(e) => setQuickCount(e.target.value)}
+              placeholder={'최대 ' + unregisteredAssets.length + '개'}
+              className="bg-geo-main border border-geo-border rounded-lg px-4 py-2.5 text-sm text-txt-primary font-mono w-[200px] focus:outline-none focus:border-status-blue"
+            />
+            <span className="text-sm text-txt-secondary">개</span>
+            <button
+              onClick={handleQuickActivate}
+              disabled={activateMutation.isPending || !quickCount}
+              className="px-5 py-2.5 rounded-lg bg-status-green text-white text-sm font-medium hover:bg-status-green/90 disabled:opacity-50 transition-all"
+            >
+              {activateMutation.isPending ? '처리중...' : '등록 실행'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {selectedSeries && (
         <div className="bg-geo-card border border-geo-border rounded-xl overflow-hidden">
@@ -166,4 +217,3 @@ export default function ActivationPage() {
     </div>
   );
 }
-
