@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
@@ -6,6 +6,7 @@ import { useToastStore } from '../stores/toast.store';
 
 interface Asset {
   asset_id: string;
+  dina_id?: string;
   edition: string;
   status: string;
 }
@@ -17,6 +18,8 @@ export default function ActivationPage() {
   const [selectedSeries, setSelectedSeries] = useState<string>(searchParams.get('series') || '');
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [quickCount, setQuickCount] = useState<string>('');
+  // [AC-008 수정] window.confirm → 커스텀 확인 모달
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const { data: seriesList } = useQuery({
     queryKey: ['agency-series'],
@@ -36,6 +39,7 @@ export default function ActivationPage() {
 
   const unregisteredAssets = assets?.filter((a: Asset) => a.status === 'UNREGISTERED') || [];
   const registeredAssets = assets?.filter((a: Asset) => a.status !== 'UNREGISTERED') || [];
+  const allRegistered = selectedSeries && !assetsLoading && assets?.length > 0 && unregisteredAssets.length === 0;
 
   const activateMutation = useMutation({
     mutationFn: (assetIds: string[]) => api.post('/agency/activate', { asset_ids: assetIds }),
@@ -65,10 +69,16 @@ export default function ActivationPage() {
     }
   };
 
+  // [AC-008 수정] 커스텀 모달로 확인
   const handleActivate = () => {
     if (selectedAssets.length === 0) return;
-    if (!window.confirm(selectedAssets.length + '개 자산을 정품등록 하시겠습니까?')) return;
-    activateMutation.mutate(selectedAssets);
+    setConfirmModal({
+      message: selectedAssets.length + '개 자산을 정품등록 하시겠습니까?',
+      onConfirm: () => {
+        activateMutation.mutate(selectedAssets);
+        setConfirmModal(null);
+      },
+    });
   };
 
   const handleQuickActivate = () => {
@@ -85,9 +95,14 @@ export default function ActivationPage() {
     const actual = target.length;
     const msg = count > actual
       ? '미등록 자산이 ' + actual + '개뿐입니다. ' + actual + '개 모두 등록하시겠습니까?'
-      : actual + '개 자산을 정품등록 하시겠습니까? (#00001부터 순서대로)';
-    if (!window.confirm(msg)) return;
-    activateMutation.mutate(target.map((a: Asset) => a.asset_id));
+      : actual + '개 자산을 정품등록 하시겠습니까? (에디션 #1부터 순서대로)';
+    setConfirmModal({
+      message: msg,
+      onConfirm: () => {
+        activateMutation.mutate(target.map((a: Asset) => a.asset_id));
+        setConfirmModal(null);
+      },
+    });
   };
 
   return (
@@ -95,15 +110,16 @@ export default function ActivationPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-txt-primary">정품등록</h2>
-          <p className="text-sm text-txt-muted mt-1">판매된 수량을 선택하여 등록합니다</p>
+          {/* [AC-004 수정] 설명 보강 */}
+          <p className="text-sm text-txt-muted mt-1">출고된 자산 중 판매 수량만큼 정품 등록을 진행합니다</p>
         </div>
         {selectedAssets.length > 0 && (
           <button
             onClick={handleActivate}
             disabled={activateMutation.isPending}
-            className="px-5 py-2.5 rounded-lg bg-status-blue text-white text-sm font-medium hover:bg-status-blue/90 disabled:opacity-50 transition-all"
+            className="px-5 py-2.5 rounded-lg bg-status-purple text-white text-sm font-medium hover:bg-status-purple/80 disabled:opacity-50 transition-all"
           >
-            {activateMutation.isPending ? '처리중...' : '선택 정품등록 실행 (' + selectedAssets.length + '개)'}
+            {activateMutation.isPending ? '처리중...' : '선택 정품등록 (' + selectedAssets.length + '개)'}
           </button>
         )}
       </div>
@@ -113,7 +129,7 @@ export default function ActivationPage() {
         <select
           value={selectedSeries}
           onChange={(e) => setSelectedSeries(e.target.value)}
-          className="bg-geo-card border border-geo-border rounded-lg px-4 py-2.5 text-sm text-txt-primary focus:outline-none focus:border-status-blue min-w-[300px]"
+          className="bg-geo-card border border-geo-border rounded-lg px-4 py-2.5 text-sm text-txt-primary focus:outline-none focus:border-status-purple min-w-[300px]"
         >
           <option value="">시리즈를 선택하세요</option>
           {seriesList?.map((s: any) => (
@@ -122,11 +138,12 @@ export default function ActivationPage() {
         </select>
       </div>
 
+      {/* [AC-007 수정] 빠른 등록 안내 보강 */}
       {selectedSeries && unregisteredAssets.length > 0 && (
         <div className="bg-geo-card border border-geo-border rounded-xl p-5 mb-5">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-sm font-semibold text-txt-primary">빠른 등록</span>
-            <span className="text-[11px] text-txt-muted">에디션 순서대로 자동 등록됩니다</span>
+            <span className="text-[11px] text-txt-muted">판매된 수량만큼 입력하세요. 에디션 #1부터 순서대로 등록됩니다.</span>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -135,18 +152,27 @@ export default function ActivationPage() {
               max={unregisteredAssets.length}
               value={quickCount}
               onChange={(e) => setQuickCount(e.target.value)}
-              placeholder={'최대 ' + unregisteredAssets.length + '개'}
-              className="bg-geo-main border border-geo-border rounded-lg px-4 py-2.5 text-sm text-txt-primary font-mono w-[200px] focus:outline-none focus:border-status-blue"
+              placeholder={'미등록 ' + unregisteredAssets.length + '개'}
+              className="bg-geo-main border border-geo-border rounded-lg px-4 py-2.5 text-sm text-txt-primary font-mono w-[200px] focus:outline-none focus:border-status-purple"
             />
             <span className="text-sm text-txt-secondary">개</span>
             <button
               onClick={handleQuickActivate}
               disabled={activateMutation.isPending || !quickCount}
-              className="px-5 py-2.5 rounded-lg bg-status-green text-white text-sm font-medium hover:bg-status-green/90 disabled:opacity-50 transition-all"
+              className="px-5 py-2.5 rounded-lg bg-status-green text-white text-sm font-medium hover:bg-status-green/80 disabled:opacity-50 transition-all"
             >
               {activateMutation.isPending ? '처리중...' : '등록 실행'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* [AC-011/013/015 수정] 전체 등록 완료 시 안내 */}
+      {allRegistered && (
+        <div className="bg-status-green/10 border border-status-green/30 rounded-xl p-6 mb-5 text-center">
+          <div className="text-2xl mb-2">✅</div>
+          <p className="text-sm font-semibold text-status-green mb-1">전체 정품등록 완료</p>
+          <p className="text-xs text-txt-muted">모든 자산이 등록되었습니다. 다운로드 메뉴에서 파일을 받을 수 있습니다.</p>
         </div>
       )}
 
@@ -155,56 +181,71 @@ export default function ActivationPage() {
           <div className="px-5 py-3.5 flex items-center justify-between border-b border-geo-border">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-txt-primary">자산 목록</span>
-              <span className="text-[11px] px-2 py-0.5 rounded-md font-medium font-mono bg-status-yellow-dim text-status-yellow">
-                {'미등록 ' + unregisteredAssets.length}
-              </span>
-              <span className="text-[11px] px-2 py-0.5 rounded-md font-medium font-mono bg-status-green-dim text-status-green">
-                {'등록 ' + registeredAssets.length}
-              </span>
+              {unregisteredAssets.length > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-md font-medium font-mono bg-status-red-dim text-status-red">
+                  {'미등록 ' + unregisteredAssets.length}
+                </span>
+              )}
+              {registeredAssets.length > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-md font-medium font-mono bg-status-green-dim text-status-green">
+                  {'등록완료 ' + registeredAssets.length}
+                </span>
+              )}
             </div>
           </div>
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-geo-border">
-                <th className="px-6 py-3 text-left w-12">
-                  <input
-                    type="checkbox"
-                    checked={unregisteredAssets.length > 0 && selectedAssets.length === unregisteredAssets.length}
-                    onChange={toggleAll}
-                    className="rounded border-geo-border"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-txt-secondary uppercase tracking-wider">에디션</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-txt-secondary uppercase tracking-wider">상태</th>
+                {/* [AC-009/010/014 수정] 미등록 자산이 있을 때만 체크박스 헤더 표시 */}
+                {unregisteredAssets.length > 0 && (
+                  <th className="w-[5%] px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={unregisteredAssets.length > 0 && selectedAssets.length === unregisteredAssets.length}
+                      onChange={toggleAll}
+                      className="rounded border-geo-border text-status-purple focus:ring-status-purple/40"
+                    />
+                  </th>
+                )}
+                <th className="px-4 py-3 text-left text-xs font-semibold text-txt-secondary uppercase tracking-wider">에디션</th>
+                {/* [AC-006 수정] DINA ID 컬럼 추가 */}
+                <th className="px-4 py-3 text-left text-xs font-semibold text-txt-secondary uppercase tracking-wider">DINA ID</th>
+                <th className="w-[15%] px-4 py-3 text-center text-xs font-semibold text-txt-secondary uppercase tracking-wider">상태</th>
               </tr>
             </thead>
             <tbody>
               {assetsLoading && (
-                <tr><td colSpan={3} className="px-6 py-12 text-center text-txt-muted">불러오는 중...</td></tr>
+                <tr><td colSpan={unregisteredAssets.length > 0 ? 4 : 3} className="px-6 py-12 text-center text-txt-muted">불러오는 중...</td></tr>
               )}
               {!assetsLoading && assets?.length === 0 && (
-                <tr><td colSpan={3} className="px-6 py-12 text-center text-txt-muted">자산이 없습니다.</td></tr>
+                <tr><td colSpan={unregisteredAssets.length > 0 ? 4 : 3} className="px-6 py-12 text-center text-txt-muted">자산이 없습니다.</td></tr>
               )}
               {!assetsLoading && assets?.map((a: Asset) => {
                 const isUnregistered = a.status === 'UNREGISTERED';
                 return (
                   <tr key={a.asset_id} className="border-b border-geo-border/50 last:border-0 hover:bg-geo-card-hover transition-colors">
-                    <td className="px-6 py-3">
-                      {isUnregistered ? (
-                        <input
-                          type="checkbox"
-                          checked={selectedAssets.includes(a.asset_id)}
-                          onChange={() => toggleAsset(a.asset_id)}
-                          className="rounded border-geo-border"
-                        />
-                      ) : (
-                        <span className="text-txt-muted">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3 text-sm font-mono text-txt-primary">{a.edition}</td>
-                    <td className="px-6 py-3">
-                      <span className={"text-[11px] px-2 py-0.5 rounded-md font-medium font-mono " + (isUnregistered ? "bg-status-yellow-dim text-status-yellow" : "bg-status-green-dim text-status-green")}>
-                        {isUnregistered ? '미등록' : '등록'}
+                    {/* [AC-009/010/014 수정] 미등록 있을 때만 체크박스 컬럼 표시 */}
+                    {unregisteredAssets.length > 0 && (
+                      <td className="px-4 py-3">
+                        {isUnregistered ? (
+                          <input
+                            type="checkbox"
+                            checked={selectedAssets.includes(a.asset_id)}
+                            onChange={() => toggleAsset(a.asset_id)}
+                            className="rounded border-geo-border text-status-purple focus:ring-status-purple/40"
+                          />
+                        ) : (
+                          <span></span>
+                        )}
+                      </td>
+                    )}
+                    <td className="px-4 py-3 text-sm font-mono text-txt-primary">#{String(a.edition).replace(/^#/, '').padStart(5, '0')}</td>
+                    {/* [AC-006 수정] DINA ID 표시 */}
+                    <td className="px-4 py-3 text-sm font-mono text-status-blue">{a.dina_id || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      {/* [AC-012 수정] 미등록=빨강, 등록=초록 색상 구분 강화 */}
+                      <span className={"text-[11px] px-2.5 py-1 rounded-md font-medium " + (isUnregistered ? "bg-status-red/15 text-status-red" : "bg-status-green-dim text-status-green")}>
+                        {isUnregistered ? '미등록' : '등록완료'}
                       </span>
                     </td>
                   </tr>
@@ -212,6 +253,31 @@ export default function ActivationPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* [AC-008 수정] 커스텀 확인 모달 */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-geo-card border border-geo-border rounded-xl w-full max-w-sm p-6 m-auto">
+            <h3 className="text-base font-semibold text-txt-primary mb-3">정품등록 확인</h3>
+            <p className="text-sm text-txt-secondary mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 text-sm text-txt-secondary border border-geo-border rounded-lg hover:text-txt-primary transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                disabled={activateMutation.isPending}
+                className="px-4 py-2 text-sm font-medium bg-status-purple text-white rounded-lg hover:bg-status-purple/80 disabled:opacity-50 transition-all"
+              >
+                {activateMutation.isPending ? '처리중...' : '등록'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
