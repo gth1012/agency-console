@@ -7,6 +7,8 @@ import DashboardPage from './pages/DashboardPage';
 import ActivationPage from './pages/ActivationPage';
 import AgencySeriesPage from './pages/AgencySeriesPage';
 import AgencyDownloadPage from './pages/AgencyDownloadPage';
+import DealersPage from './pages/DealersPage';
+import DownloadLogsPage from './pages/DownloadLogsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -34,6 +36,8 @@ export default function App() {
             <Route path="series" element={<AgencySeriesPage />} />
             <Route path="activation" element={<ActivationPage />} />
             <Route path="download" element={<AgencyDownloadPage />} />
+            <Route path="dealers" element={<DealersPage />} />
+            <Route path="download-logs" element={<DownloadLogsPage />} />
           </Route>
         </Routes>
       </HashRouter>
