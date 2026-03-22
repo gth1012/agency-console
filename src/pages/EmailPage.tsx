@@ -11,7 +11,7 @@ export default function EmailPage() {
 
   const sendMutation = useMutation({
     mutationFn: (payload: { to: string; subject: string; message: string }) =>
-      api.post('/api/agency/email/send', payload),
+      api.post('/agency/email/send', payload),
     onSuccess: () => {
       showToast('이메일이 전송되었습니다.', 'success');
       setTo('');
@@ -47,7 +47,7 @@ export default function EmailPage() {
       {/* Form Card */}
       <div className="bg-geo-card border border-geo-border rounded-xl max-w-2xl">
         <form onSubmit={handleSend} className="p-6 space-y-5">
-          {/* 수신자 */}
+          {/* 수신자 이메일 */}
           <div>
             <label className="block text-sm font-medium text-txt-secondary mb-1.5">
               수신자 이메일
@@ -70,7 +70,7 @@ export default function EmailPage() {
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="이메일 제목을 입력하세요"
+              placeholder="이메일 제목을 입력하세요."
               className="w-full px-3 py-2.5 bg-geo-main border border-geo-border rounded-lg text-txt-primary text-sm focus:border-status-purple focus:outline-none transition-colors"
             />
           </div>
@@ -83,7 +83,7 @@ export default function EmailPage() {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="이메일 내용을 입력하세요"
+              placeholder="이메일 내용을 입력하세요."
               rows={8}
               className="w-full px-3 py-2.5 bg-geo-main border border-geo-border rounded-lg text-txt-primary text-sm focus:border-status-purple focus:outline-none transition-colors resize-none"
             />
