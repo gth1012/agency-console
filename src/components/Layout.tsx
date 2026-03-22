@@ -109,11 +109,9 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="w-[220px] min-h-screen bg-geo-sidebar border-r border-geo-border flex flex-col fixed z-10">
         {/* Logo */}
-        <div className="px-5 py-6 flex items-center gap-2.5 border-b border-geo-border">
-          <div className="w-8 h-8 bg-status-green rounded-lg flex items-center justify-center text-sm font-bold text-white">
-            {user?.tenantName?.charAt(0) || 'A'}
-          </div>
-          <span className="text-base font-semibold tracking-tight text-txt-primary">{user?.tenantName || 'Agency Console'}</span>
+        <div className="px-5 py-6 flex flex-col gap-1 border-b border-geo-border">
+          <span className="text-xl font-bold tracking-widest text-status-green">{user?.tenantName?.split(' ')[0] || 'Agency'}</span>
+          <span className="text-base font-semibold tracking-tight text-txt-primary">{user?.tenantName?.split(' ').slice(1).join(' ') || 'Console'}</span>
         </div>
 
         {/* Nav */}
