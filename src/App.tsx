@@ -1,4 +1,4 @@
-﻿import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/auth.store';
 import Layout from './components/Layout';
 import Toast from './components/Toast';
@@ -10,6 +10,7 @@ import AgencyDownloadPage from './pages/AgencyDownloadPage';
 import DealersPage from './pages/DealersPage';
 import DownloadLogsPage from './pages/DownloadLogsPage';
 import EmailPage from './pages/EmailPage';
+import SettingsPage from './pages/SettingsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="dealers" element={<DealersPage />} />
             <Route path="download-logs" element={<DownloadLogsPage />} />
             <Route path="email" element={<EmailPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
       </HashRouter>
