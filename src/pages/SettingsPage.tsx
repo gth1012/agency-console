@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import api from '../services/api';
 import { useToastStore } from '../stores/toast.store';
 
