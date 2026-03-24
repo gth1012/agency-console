@@ -9,6 +9,7 @@ interface User {
   tenantId: string;
   tenantCode: string;
   tenantName: string;
+  dealer_id?: string;
 }
 
 interface AuthState {
