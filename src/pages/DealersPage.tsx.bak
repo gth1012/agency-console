@@ -19,7 +19,6 @@ export default function DealersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState({ name: '', contact_name: '', contact_email: '', contact_phone: '', address: '' });
   const [deleteTarget, setDeleteTarget] = useState<Dealer | null>(null);
-  const [reissueCode, setReissueCode] = useState<{ name: string; code: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['agency-dealers'],
@@ -47,15 +46,6 @@ export default function DealersPage() {
       setDeleteTarget(null);
     },
     onError: () => showToast('거래처 삭제에 실패했습니다.', 'error'),
-  });
-
-  const reissueMutation = useMutation({
-    mutationFn: (dealer: Dealer) => api.post('/agency/dealers/' + dealer.dealer_id + '/reissue').then(res => ({ name: dealer.name, code: res.data.access_code || res.data.transfer_code || res.data.code })),
-    onSuccess: (result) => {
-      setReissueCode(result);
-      showToast('전송코드가 재발급되었습니다.', 'success');
-    },
-    onError: () => showToast('전송코드 재발급에 실패했습니다.', 'error'),
   });
 
   const handleAdd = (e: React.FormEvent) => {
@@ -108,18 +98,9 @@ export default function DealersPage() {
                 <td className="px-5 py-3 text-sm text-txt-secondary">{d.contact_phone || '-'}</td>
                 <td className="px-5 py-3 text-sm text-txt-muted text-center">{new Date(d.created_at).toLocaleDateString('ko-KR')}</td>
                 <td className="px-5 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => reissueMutation.mutate(d)}
-                      disabled={reissueMutation.isPending}
-                      className="text-xs px-3 py-1.5 rounded-lg text-status-purple border border-status-purple/30 hover:bg-status-purple/10 transition-all disabled:opacity-50"
-                    >
-                      전송코드 재발급
-                    </button>
-                    <button onClick={() => setDeleteTarget(d)} className="text-xs px-3 py-1.5 rounded-lg text-status-red border border-status-red/30 hover:bg-status-red/10 transition-all">
-                      삭제
-                    </button>
-                  </div>
+                  <button onClick={() => setDeleteTarget(d)} className="text-xs px-3 py-1.5 rounded-lg text-status-red border border-status-red/30 hover:bg-status-red/10 transition-all">
+                    삭제
+                  </button>
                 </td>
               </tr>
             ))}
@@ -127,29 +108,6 @@ export default function DealersPage() {
         </table>
       </div>
 
-      {/* 전송코드 재발급 결과 모달 */}
-      {reissueCode && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-          <div className="bg-geo-card border border-geo-border rounded-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-txt-primary mb-1">전송코드 재발급 완료</h3>
-            <p className="text-sm text-txt-muted mb-4">{reissueCode.name}의 새 전송코드입니다. 지금만 확인 가능합니다.</p>
-            <div className="bg-geo-main border border-geo-border rounded-lg px-4 py-3 flex items-center justify-between mb-4">
-              <span className="font-mono text-sm text-status-purple break-all">{reissueCode.code}</span>
-              <button
-                onClick={() => { navigator.clipboard.writeText(reissueCode.code); showToast('복사되었습니다.', 'success'); }}
-                className="ml-3 px-3 py-1.5 text-xs bg-status-purple text-white rounded-lg hover:bg-status-purple/80 transition-all shrink-0"
-              >
-                복사
-              </button>
-            </div>
-            <button onClick={() => setReissueCode(null)} className="w-full px-4 py-2.5 bg-status-purple text-white rounded-lg font-medium hover:bg-status-purple/80 transition-all">
-              확인
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 거래처 추가 모달 */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-geo-card border border-geo-border rounded-xl w-full max-w-md">
@@ -189,7 +147,6 @@ export default function DealersPage() {
         </div>
       )}
 
-      {/* 삭제 확인 모달 */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
           <div className="bg-geo-card border border-geo-border rounded-xl w-full max-w-sm p-6">
