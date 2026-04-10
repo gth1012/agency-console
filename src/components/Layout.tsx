@@ -1,4 +1,4 @@
-﻿import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/auth.store';
 
 const DEALER_MENU = [
@@ -81,7 +81,7 @@ const INTERNAL_MENU = [
 ];
 
 const isDealerRole = (role: string | undefined) =>
-  role === 'agency_admin' || role === 'DEALER_ADMIN' || role === 'DEALER_OPERATOR';
+  role === 'agency_admin' || role === 'DEALER_ADMIN' || role === 'DEALER_OPERATOR' || role === 'super_admin';
 
 export default function Layout() {
   const location = useLocation();
