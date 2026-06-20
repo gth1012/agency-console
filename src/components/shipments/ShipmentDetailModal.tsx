@@ -408,14 +408,14 @@ export default function ShipmentDetailModal({ shipmentId, onClose }: ShipmentDet
               onClick={handleCopyEvidence}
               className="w-full px-4 py-2 text-sm border border-geo-border rounded-lg text-txt-secondary hover:text-txt-primary hover:border-geo-border-hover transition-all"
             >
-              📋 증빙 텍스트 복사
+              증빙 텍스트 복사
             </button>
           </div>
 
           {/* 인증 캡슐 링크 표시 영역 */}
           {capsuleLink && (
             <div className="mb-6 bg-geo-main border border-status-purple/30 rounded-lg px-4 py-3 space-y-2">
-              <p className="text-xs text-status-purple font-semibold">🔒 인증 캡슐 다운로드 링크</p>
+              <p className="text-xs text-status-purple font-semibold">인증 캡슐 다운로드 링크</p>
               <p className="text-xs text-txt-muted">
                 DINA ID: <span className="font-mono text-txt-primary">{capsuleLink.dinaId}</span>
               </p>
@@ -434,7 +434,7 @@ export default function ShipmentDetailModal({ shipmentId, onClose }: ShipmentDet
                 만료: {new Date(capsuleLink.expiresAt).toLocaleString('ko-KR')} (72시간)
               </p>
               <p className="text-xs text-status-yellow">
-                ⚠️ 재발급 시 기존 링크는 무효화됩니다.
+                재발급 시 기존 링크는 무효화됩니다.
               </p>
               {capsuleReadyAsset && (
                 <button
@@ -514,7 +514,7 @@ export default function ShipmentDetailModal({ shipmentId, onClose }: ShipmentDet
                 <button
                   onClick={() => voidMutation.mutate(voidReason)}
                   disabled={!voidReason.trim() || voidMutation.isPending}
-                  className="flex-1 px-4 py-2 bg-status-red text-white rounded-lg font-medium hover:bg-status-red/80 disabled:opacity-50 transition-all"
+                  className="flex-1 px-4 py-2 border border-geo-border rounded-lg text-txt-secondary hover:text-txt-primary disabled:opacity-50 transition-all"
                 >
                   {voidMutation.isPending ? '처리 중...' : '무효화 확인'}
                 </button>
@@ -526,7 +526,7 @@ export default function ShipmentDetailModal({ shipmentId, onClose }: ShipmentDet
                 onClick={handleDownload}
                 className="flex-1 px-4 py-2 border border-geo-border rounded-lg text-txt-secondary hover:text-txt-primary transition-all"
               >
-                📥 다운로드
+                다운로드
               </button>
               {/* 인증 캡슐 발송 버튼 - SHIPPED + READY 상태에서만 표시 */}
               {shipment.status === 'SHIPPED' && capsuleReadyAsset && (
@@ -535,7 +535,7 @@ export default function ShipmentDetailModal({ shipmentId, onClose }: ShipmentDet
                   disabled={issuingCapsule}
                   className="flex-1 px-4 py-2 bg-status-purple-dim text-status-purple rounded-lg font-medium hover:bg-status-purple/20 disabled:opacity-50 transition-all"
                 >
-                  {issuingCapsule ? '발급 중...' : '🔒 인증 캡슐 발송 (대표 1건)'}
+                  {issuingCapsule ? '발급 중...' : '인증 캡슐 발송 (대표 1건)'}
                 </button>
               )}
               {shipment.status === 'READY' && (
@@ -549,7 +549,7 @@ export default function ShipmentDetailModal({ shipmentId, onClose }: ShipmentDet
               {shipment.status === 'SHIPPED' && (
                 <button
                   onClick={() => setShowVoidInput(true)}
-                  className="flex-1 px-4 py-2 bg-status-red text-white rounded-lg font-medium hover:bg-status-red/80 transition-all"
+                  className="flex-1 px-4 py-2 border border-geo-border rounded-lg text-txt-secondary hover:text-txt-primary transition-all"
                 >
                   무효화
                 </button>
