@@ -23,7 +23,7 @@ interface Shipment {
   shipmentAssets?: ShipmentAsset[];
 }
 
-interface ClaimLink {
+interface CapsuleLink {
   url: string;
   expiresAt: string;
   dinaId: string;
@@ -31,7 +31,7 @@ interface ClaimLink {
 
 export default function ShipmentManagementPage() {
   const toast = useToastStore();
-  const [claimLinks, setClaimLinks] = useState<Record<string, ClaimLink>>({});
+  const [capsuleLinks, setCapsuleLinks] = useState<Record<string, CapsuleLink>>({});
   const [issuingId, setIssuingId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -70,44 +70,43 @@ export default function ShipmentManagementPage() {
     return <span className="text-xs text-txt-muted">-</span>;
   };
 
-  const handleIssueClaimLink = async (shipment: Shipment) => {
+  const handleIssueCapsule = async (shipment: Shipment) => {
     const readyAsset = getCapsuleReadyAsset(shipment);
     if (!readyAsset) return;
     setIssuingId(shipment.shipment_id);
     try {
-      const res = await api.post('/agency/capsule/claim/issue', {
+      const res = await api.post('/agency/capsule/issue', {
         shipment_id: shipment.shipment_id,
         asset_id: readyAsset.asset_id,
       });
-      setClaimLinks(prev => ({
+      setCapsuleLinks(prev => ({
         ...prev,
         [shipment.shipment_id]: {
-          url: res.data.claim_url,
+          url: res.data.secure_download_url,
           expiresAt: res.data.expires_at,
           dinaId: res.data.dina_id,
         },
       }));
-      toast.show('Claim 링크가 발급되었습니다.', 'success');
+      toast.show('인증 캡슐 링크가 발급되었습니다.', 'success');
     } catch (err: any) {
       const code = err.response?.data?.code;
       const msgMap: Record<string, string> = {
         GEOCAPSULE_NOT_READY: '아직 인증 캡슐이 준비되지 않았습니다.',
         ASSET_NOT_IN_SHIPMENT: '해당 출고에 포함된 자산이 아닙니다.',
-        ALREADY_CLAIMED: '이미 Claim 완료된 자산입니다. 재발급이 불가능합니다.',
         FORBIDDEN: '권한이 없습니다.',
-        NEO_UNAVAILABLE: 'Claim 링크 발급 서버 연결에 실패했습니다.',
+        NEO_UNAVAILABLE: '보안 링크 발급 서버 연결에 실패했습니다.',
       };
-      toast.show(msgMap[code] || 'Claim 링크 발급에 실패했습니다.', 'error');
+      toast.show(msgMap[code] || '링크 발급에 실패했습니다.', 'error');
     } finally {
       setIssuingId(null);
     }
   };
 
   const handleCopyLink = (shipmentId: string) => {
-    const link = claimLinks[shipmentId];
+    const link = capsuleLinks[shipmentId];
     if (!link) return;
     navigator.clipboard.writeText(link.url);
-    toast.show('Claim 링크가 복사되었습니다.', 'success');
+    toast.show('링크가 복사되었습니다.', 'success');
   };
 
   return (
@@ -115,8 +114,8 @@ export default function ShipmentManagementPage() {
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-txt-primary">출고 관리</h2>
         <p className="text-sm text-txt-muted mt-1">
-          소비자 소유권 Claim 링크를 발급합니다.
-          <span className="ml-2 text-xs text-status-green">Phase 2 — Claim형</span>
+          인증 캡슐 Claim 링크를 발급합니다.
+          <span className="ml-2 text-xs text-status-yellow">Phase 1 — 임시 다운로드형</span>
         </p>
       </div>
 
@@ -140,7 +139,7 @@ export default function ShipmentManagementPage() {
             <tbody>
               {shipments.map((shipment: Shipment) => {
                 const readyAsset = getCapsuleReadyAsset(shipment);
-                const claimLink = claimLinks[shipment.shipment_id];
+                const capsuleLink = capsuleLinks[shipment.shipment_id];
                 return (
                   <>
                     <tr
@@ -155,33 +154,33 @@ export default function ShipmentManagementPage() {
                       <td className="px-5 py-3">
                         {readyAsset ? (
                           <button
-                            onClick={() => handleIssueClaimLink(shipment)}
+                            onClick={() => handleIssueCapsule(shipment)}
                             disabled={issuingId === shipment.shipment_id}
-                            className="px-3 py-1.5 text-xs bg-status-green-dim text-status-green border border-status-green/30 rounded-lg hover:bg-status-green/20 disabled:opacity-50 transition-all"
+                            className="px-3 py-1.5 text-xs bg-status-purple-dim text-status-purple border border-status-purple/30 rounded-lg hover:bg-status-purple/20 disabled:opacity-50 transition-all"
                           >
-                            {issuingId === shipment.shipment_id ? '발급 중...' : 'Claim 링크 발송'}
+                            {issuingId === shipment.shipment_id ? '발급 중...' : '캡슐 발송'}
                           </button>
                         ) : (
                           <span className="text-xs text-txt-muted">-</span>
                         )}
                       </td>
                     </tr>
-                    {claimLink && (
-                      <tr key={`${shipment.shipment_id}-claim`} className="border-b border-geo-border/50 bg-geo-main/30">
+                    {capsuleLink && (
+                      <tr key={`${shipment.shipment_id}-link`} className="border-b border-geo-border/50 bg-geo-main/30">
                         <td colSpan={6} className="px-5 py-3">
                           <div className="flex items-center gap-3">
-                            <span className="text-xs text-status-green font-semibold">Claim 링크:</span>
+                            <span className="text-xs text-status-purple font-semibold">링크:</span>
                             <code className="text-xs text-txt-primary font-mono bg-geo-border/20 px-2 py-1 rounded flex-1 overflow-x-auto truncate">
-                              {claimLink.url}
+                              {capsuleLink.url}
                             </code>
                             <button
                               onClick={() => handleCopyLink(shipment.shipment_id)}
-                              className="px-3 py-1 text-xs text-status-green border border-status-green/30 rounded hover:bg-status-green/10 transition-all whitespace-nowrap"
+                              className="px-3 py-1 text-xs text-status-purple border border-status-purple/30 rounded hover:bg-status-purple/10 transition-all whitespace-nowrap"
                             >
                               복사
                             </button>
                             <span className="text-xs text-txt-muted whitespace-nowrap">
-                              만료: {new Date(claimLink.expiresAt).toLocaleString('ko-KR')}
+                              만료: {new Date(capsuleLink.expiresAt).toLocaleString('ko-KR')}
                             </span>
                           </div>
                         </td>
