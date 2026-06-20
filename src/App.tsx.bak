@@ -9,7 +9,7 @@ import AgencySeriesPage from './pages/AgencySeriesPage';
 import AgencyDownloadPage from './pages/AgencyDownloadPage';
 import DealersPage from './pages/DealersPage';
 import DownloadLogsPage from './pages/DownloadLogsPage';
-import ShipmentManagementPage from './pages/ShipmentManagementPage';
+import EmailPage from './pages/EmailPage';
 import SettingsPage from './pages/SettingsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -40,7 +40,7 @@ export default function App() {
             <Route path="download" element={<AgencyDownloadPage />} />
             <Route path="dealers" element={<DealersPage />} />
             <Route path="download-logs" element={<DownloadLogsPage />} />
-            <Route path="shipments" element={<ShipmentManagementPage />} />
+            <Route path="email" element={<EmailPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>
