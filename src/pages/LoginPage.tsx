@@ -47,7 +47,7 @@ export default function LoginPage() {
       });
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || '로그인에 실패했습니다');
+      setError('등록된 계정이 없거나 비밀번호가 올바르지 않습니다');
     } finally {
       setLoading(false);
     }
